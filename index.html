@@ -17,28 +17,21 @@
 </head>
 <body class="bg-zinc-50 text-zinc-950 min-h-screen pb-20">
     <div class="max-w-2xl mx-auto">
-        <!-- 헤더 -->
         <div class="sticky top-0 bg-white border-b border-zinc-200 z-50 shadow-sm">
             <div class="flex items-center justify-between px-6 py-5">
                 <div class="flex items-center gap-3">
                     <span class="text-3xl accent">📖</span>
                     <h1 class="text-2xl font-bold tracking-tighter accent">독서 스냅</h1>
                 </div>
-                <div class="text-xs text-zinc-400">로컬 저장됨</div>
+                <button onclick="clearAllData()" class="text-xs px-4 py-2 bg-red-100 text-red-600 rounded-2xl hover:bg-red-200">전체 초기화</button>
             </div>
         </div>
-
-        <!-- 인스타그램 3열 그리드 -->
         <div id="feed" class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-6 px-4 pb-32"></div>
     </div>
 
-    <!-- + 버튼 -->
-    <button onclick="showModal()" 
-            class="fixed bottom-8 right-8 w-16 h-16 accent-bg text-black rounded-full flex items-center justify-center text-4xl shadow-2xl hover:scale-110 active:scale-95 transition-all">
-        +
-    </button>
+    <button onclick="showModal()" class="fixed bottom-8 right-8 w-16 h-16 accent-bg text-black rounded-full flex items-center justify-center text-4xl shadow-2xl hover:scale-110 active:scale-95 transition-all">+</button>
 
-    <!-- 새/수정 모달 -->
+    <!-- 모달 -->
     <div id="modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
         <div class="modal bg-white rounded-3xl w-full max-w-md mx-4 overflow-hidden shadow-2xl">
             <div class="p-6 border-b border-zinc-200 flex items-center justify-between">
@@ -46,17 +39,16 @@
                 <button onclick="hideModal()" class="text-3xl text-zinc-400">×</button>
             </div>
             <form id="post-form" class="p-6 space-y-6">
-                <div onclick="document.getElementById('fileInput').click()" 
-                     class="border-2 border-dashed border-zinc-200 hover:accent-border rounded-3xl h-80 flex flex-col items-center justify-center cursor-pointer transition-all">
+                <div onclick="document.getElementById('fileInput').click()" class="border-2 border-dashed border-zinc-200 hover:accent-border rounded-3xl h-80 flex flex-col items-center justify-center cursor-pointer transition-all">
                     <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="previewImage(event)">
                     <div id="upload-area" class="text-center">
                         <i class="fas fa-camera text-5xl accent mb-3"></i>
-                        <p class="text-zinc-500">사진 업로드 (책 표지 / 읽는 페이지)</p>
+                        <p class="text-zinc-500">사진 업로드</p>
                     </div>
                     <img id="preview" class="hidden max-h-80 rounded-2xl mx-auto">
                 </div>
                 <input id="title" type="text" class="w-full bg-zinc-100 border border-zinc-200 rounded-2xl px-6 py-4 text-lg placeholder-zinc-400 focus:accent-border outline-none" placeholder="책 제목 (선택)">
-                <textarea id="memo" rows="5" class="w-full bg-zinc-100 border border-zinc-200 rounded-3xl px-6 py-5 resize-none focus:accent-border outline-none" placeholder="오늘 읽은 내용, 느낌, 인상적인 문장..."></textarea>
+                <textarea id="memo" rows="5" class="w-full bg-zinc-100 border border-zinc-200 rounded-3xl px-6 py-5 resize-none focus:accent-border outline-none" placeholder="오늘 읽은 내용, 느낌..."></textarea>
             </form>
             <div class="p-6 border-t border-zinc-200 flex gap-4">
                 <button onclick="hideModal()" class="flex-1 py-4 border border-zinc-300 rounded-3xl font-medium">취소</button>
@@ -65,7 +57,7 @@
         </div>
     </div>
 
-    <!-- 상세보기 모달 -->
+    <!-- 상세 모달 -->
     <div id="detail-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
         <div class="bg-white w-full max-w-lg mx-4 rounded-3xl overflow-hidden">
             <div class="relative">
@@ -89,7 +81,15 @@
         let editingIndex = null;
         let currentDetailIndex = null;
 
-        function saveToStorage() { localStorage.setItem('readingSnaps', JSON.stringify(posts)); }
+        function saveToStorage() {
+            try {
+                localStorage.setItem('readingSnaps', JSON.stringify(posts));
+                return true;
+            } catch (e) {
+                alert("저장 공간이 꽉 찼습니다!\n\n사진을 좀 지우거나 브라우저 캐시를 비워주세요.");
+                return false;
+            }
+        }
 
         function renderFeed() {
             const feed = document.getElementById('feed');
@@ -112,9 +112,8 @@
         function previewImage(e) {
             const reader = new FileReader();
             reader.onload = ev => {
-                const preview = document.getElementById('preview');
-                preview.src = ev.target.result;
-                preview.classList.remove('hidden');
+                document.getElementById('preview').src = ev.target.result;
+                document.getElementById('preview').classList.remove('hidden');
                 document.getElementById('upload-area').classList.add('hidden');
             };
             reader.readAsDataURL(e.target.files[0]);
@@ -156,6 +155,10 @@
             const preview = document.getElementById('preview');
 
             if (!memo) { alert("메모를 적어주세요"); return; }
+            if (editingIndex === null && preview.classList.contains('hidden')) {
+                alert("사진을 먼저 업로드하세요");
+                return;
+            }
 
             if (editingIndex !== null) {
                 const post = posts[editingIndex];
@@ -163,28 +166,27 @@
                 post.memo = memo;
                 if (!preview.classList.contains('hidden') && preview.src) post.image = preview.src;
             } else {
-                if (preview.classList.contains('hidden')) { alert("사진을 먼저 업로드하세요"); return; }
                 posts.push({ image: preview.src, title, memo, date: new Date().toISOString() });
             }
 
-            saveToStorage();
-            hideModal();
-            renderFeed();
-            
-            // 🔥 핵심 해결: 새 게시물 올리면 바로 상단으로 스크롤 → 안 보이는 곳에 숨는 문제 완전 해결
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (saveToStorage()) {
+                hideModal();
+                renderFeed();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                setTimeout(() => alert("✅ 게시 완료!"), 100);
+            }
         }
 
-        function showDetail(idx) {
-            currentDetailIndex = idx;
-            const post = posts[idx];
-            document.getElementById('detail-image').src = post.image;
-            document.getElementById('detail-title').textContent = post.title || '무제목';
-            document.getElementById('detail-memo').textContent = post.memo;
-            document.getElementById('detail-date').textContent = new Date(post.date).toLocaleDateString('ko-KR', {year:'numeric', month:'long', day:'numeric'});
-            document.getElementById('detail-modal').classList.remove('hidden');
+        function clearAllData() {
+            if (confirm("모든 게시물을 정말 삭제할까요?\n\n되돌릴 수 없습니다!")) {
+                localStorage.removeItem('readingSnaps');
+                posts = [];
+                renderFeed();
+                alert("모든 데이터가 초기화되었습니다.");
+            }
         }
 
+        function showDetail(idx) { /* 이전과 동일 */ currentDetailIndex = idx; const post = posts[idx]; document.getElementById('detail-image').src = post.image; document.getElementById('detail-title').textContent = post.title || '무제목'; document.getElementById('detail-memo').textContent = post.memo; document.getElementById('detail-date').textContent = new Date(post.date).toLocaleDateString('ko-KR', {year:'numeric', month:'long', day:'numeric'}); document.getElementById('detail-modal').classList.remove('hidden'); }
         function hideDetail() { document.getElementById('detail-modal').classList.add('hidden'); }
         function editCurrent() { hideDetail(); showModal(currentDetailIndex); }
         function deleteCurrent() {
