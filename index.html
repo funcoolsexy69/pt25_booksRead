@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="mul">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>독서 기록장 📸</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { font-family: system-ui, -apple-system, sans-serif; }
+        .post-img { aspect-ratio: 1/1; object-fit: cover; }
+        .modal { animation: pop 0.3s ease-out; }
+        .accent { color: #ff75fa; }
+        .accent-bg { background-color: #ff75fa; }
+        .accent-border { border-color: #ff75fa; }
+        @keyframes pop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .neon-hover:hover { box-shadow: 0 0 25px #ff75fa40; }
+    </style>
+</head>
+<body class="bg-zinc-50 text-zinc-950 min-h-screen pb-20">
+    <div class="max-w-xl mx-auto">
+        <!-- Header -->
+        <div class="sticky top-0 bg-white border-b border-zinc-200 z-50 shadow-sm">
+            <div class="flex items-center justify-between px-6 py-5">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl accent">📖</span>
+                    <h1 class="text-2xl font-bold tracking-tighter accent">독서 스냅</h1>
+                </div>
+                <div class="text-xs text-zinc-400">로컬 저장됨</div>
+            </div>
+        </div>
+
+        <!-- Feed -->
+        <div id="feed" class="space-y-10 pt-6 px-4"></div>
+    </div>
+
+    <!-- Floating + Button -->
+    <button onclick="showModal()" 
+            class="fixed bottom-8 right-8 w-16 h-16 accent-bg text-black rounded-full flex items-center justify-center text-4xl shadow-2xl hover:scale-110 transition-all active:scale-95 neon-hover">
+        +
+    </button>
+
+    <!-- Modal -->
+    <div id="modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+        <div class="modal bg-white rounded-3xl w-full max-w-md mx-4 overflow-hidden shadow-2xl">
+            <div class="p-6 border-b border-zinc-200 flex items-center justify-between">
+                <h2 class="text-xl font-semibold">새 독서 스냅</h2>
+                <button onclick="hideModal()" class="text-3xl leading-none text-zinc-400">×</button>
+            </div>
+            
+            <div class="p-6 space-y-6">
+                <!-- Image Upload -->
+                <div onclick="document.getElementById('fileInput').click()" 
+                     class="border-2 border-dashed border-zinc-200 hover:accent-border rounded-3xl h-80 flex flex-col items-center justify-center cursor-pointer transition-all neon-hover">
+                    <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="previewImage(event)">
+                    <div id="upload-area" class="text-center">
+                        <i class="fas fa-camera text-5xl accent mb-3"></i>
+                        <p class="text-zinc-500">사진 업로드 (책 표지 / 읽는 페이지)</p>
+                    </div>
+                    <img id="preview" class="hidden max-h-80 rounded-2xl mx-auto">
+                </div>
+
+                <!-- Book Title -->
+                <input id="title" type="text" 
+                       class="w-full bg-zinc-100 border border-zinc-200 rounded-2xl px-6 py-4 text-lg placeholder-zinc-400 focus:accent-border outline-none"
+                       placeholder="책 제목 (선택)">
+
+                <!-- Memo -->
+                <textarea id="memo" rows="5"
+                          class="w-full bg-zinc-100 border border-zinc-200 rounded-3xl px-6 py-5 resize-none focus:accent-border outline-none"
+                          placeholder="오늘 읽은 내용, 느낌, 인상적인 문장..."></textarea>
+            </div>
+
+            <div class="p-6 border-t border-zinc-200 flex gap-4">
+                <button onclick="hideModal()" 
+                        class="flex-1 py-4 border border-zinc-300 rounded-3xl font-medium">취소</button>
+                <button onclick="savePost()" 
+                        class="flex-1 py-4 accent-bg text-black font-bold rounded-3xl neon-hover">게시하기</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let posts = JSON.parse(localStorage.getItem('readingSnaps')) || [];
+
+        function saveToStorage() {
+            localStorage.setItem('readingSnaps', JSON.stringify(posts));
+        }
+
+        function renderFeed() {
+            const feed = document.getElementById('feed');
+            feed.innerHTML = '';
+            
+            if (posts.length === 0) {
+                feed.innerHTML = `
+                    <div class="text-center py-20 text-zinc-400">
+                        <div class="text-6xl mb-4 accent">📖</div>
+                        <p>아직 스냅이 없습니다<br>오른쪽 아래 + 버튼을 눌러 시작하세요</p>
+                    </div>`;
+                return;
+            }
+
+            posts.slice().reverse().forEach((post, index) => {
+                const realIndex = posts.length - 1 - index;
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-3xl overflow-hidden border border-zinc-100 shadow-sm neon-hover";
+                card.innerHTML = `
+                    <div class="relative">
+                        <img src="${post.image}" class="post-img w-full">
+                        <button onclick="deletePost(${realIndex}); event.stopImmediatePropagation()" 
+                                class="absolute top-4 right-4 bg-black/60 hover:bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-xl">
+                            ✕
+                        </button>
+                    </div>
+                    <div class="p-6">
+                        ${post.title ? `<div class="font-semibold text-xl mb-2 text-zinc-950">${post.title}</div>` : ''}
+                        <div class="text-zinc-700 leading-relaxed whitespace-pre-wrap">${post.memo}</div>
+                        <div class="text-xs text-zinc-400 mt-4">${new Date(post.date).toLocaleDateString('ko-KR', {month:'long', day:'numeric'})}</div>
+                    </div>
+                `;
+                feed.appendChild(card);
+            });
+        }
+
+        function previewImage(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                document.getElementById('preview').src = ev.target.result;
+                document.getElementById('preview').classList.remove('hidden');
+                document.getElementById('upload-area').classList.add('hidden');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function showModal() {
+            document.getElementById('modal').classList.remove('hidden');
+            document.getElementById('fileInput').value = '';
+            document.getElementById('preview').classList.add('hidden');
+            document.getElementById('upload-area').classList.remove('hidden');
+            document.getElementById('title').value = '';
+            document.getElementById('memo').value = '';
+        }
+
+        function hideModal() {
+            document.getElementById('modal').classList.add('hidden');
+        }
+
+        function savePost() {
+            const previewImg = document.getElementById('preview');
+            const title = document.getElementById('title').value.trim();
+            const memo = document.getElementById('memo').value.trim();
+
+            if (!previewImg.src || previewImg.classList.contains('hidden')) {
+                alert("사진을 먼저 업로드하세요");
+                return;
+            }
+            if (!memo) {
+                alert("독서 메모를 적어주세요");
+                return;
+            }
+
+            posts.push({
+                image: previewImg.src,
+                title: title,
+                memo: memo,
+                date: new Date().toISOString()
+            });
+
+            saveToStorage();
+            hideModal();
+            renderFeed();
+        }
+
+        function deletePost(index) {
+            if (confirm("이 스냅을 삭제할까요?")) {
+                posts.splice(index, 1);
+                saveToStorage();
+                renderFeed();
+            }
+        }
+
+        window.onload = () => {
+            renderFeed();
+        };
+    </script>
+</body>
+</html>
