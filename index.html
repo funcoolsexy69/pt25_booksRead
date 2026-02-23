@@ -1,146 +1,126 @@
 <!DOCTYPE html>
-<html lang="ko">
+<html lang="mul">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>독서 스냅 📸</title>
+    <title>독서 기록장 📖</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         body { font-family: system-ui, -apple-system, sans-serif; }
-        .grid-item { aspect-ratio: 1/1; }
-        .modal { animation: pop 0.3s ease-out; }
         .accent { color: #ff75fa; }
         .accent-bg { background-color: #ff75fa; }
-        @keyframes pop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
     </style>
 </head>
 <body class="bg-zinc-50 text-zinc-950 min-h-screen pb-20">
     <div class="max-w-2xl mx-auto">
+        <!-- 헤더 (초기화 버튼 완전 제거) -->
         <div class="sticky top-0 bg-white border-b border-zinc-200 z-50 shadow-sm">
             <div class="flex items-center justify-between px-6 py-5">
                 <div class="flex items-center gap-3">
                     <span class="text-3xl accent">📖</span>
-                    <h1 class="text-2xl font-bold tracking-tighter accent">독서 스냅</h1>
+                    <h1 class="text-2xl font-bold tracking-tighter accent">독서기록장</h1>
                 </div>
-                <button onclick="clearAllData()" class="text-xs px-4 py-2 bg-red-100 text-red-600 rounded-2xl hover:bg-red-200">전체 초기화</button>
             </div>
         </div>
-        <div id="feed" class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-6 px-4 pb-32"></div>
+
+        <!-- 기록 목록 -->
+        <div id="feed" class="pt-6 px-4 space-y-6"></div>
     </div>
 
-    <button onclick="showModal()" class="fixed bottom-8 right-8 w-16 h-16 accent-bg text-black rounded-full flex items-center justify-center text-4xl shadow-2xl hover:scale-110 active:scale-95 transition-all">+</button>
+    <!-- + 버튼 -->
+    <button onclick="showModal()" 
+            class="fixed bottom-8 right-8 w-16 h-16 accent-bg text-black rounded-full flex items-center justify-center text-4xl shadow-2xl hover:scale-110 active:scale-95">
+        +
+    </button>
 
-    <!-- 모달 -->
+    <!-- 입력 모달 -->
     <div id="modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-        <div class="modal bg-white rounded-3xl w-full max-w-md mx-4 overflow-hidden shadow-2xl">
+        <div class="bg-white rounded-3xl w-full max-w-md mx-4 overflow-hidden shadow-2xl">
             <div class="p-6 border-b border-zinc-200 flex items-center justify-between">
-                <h2 id="modal-title" class="text-xl font-semibold">새 독서 스냅</h2>
+                <h2 id="modal-title" class="text-xl font-semibold">새 독서 기록</h2>
                 <button onclick="hideModal()" class="text-3xl text-zinc-400">×</button>
             </div>
-            <form id="post-form" class="p-6 space-y-6">
-                <div onclick="document.getElementById('fileInput').click()" class="border-2 border-dashed border-zinc-200 hover:accent-border rounded-3xl h-80 flex flex-col items-center justify-center cursor-pointer transition-all">
-                    <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="previewImage(event)">
-                    <div id="upload-area" class="text-center">
-                        <i class="fas fa-camera text-5xl accent mb-3"></i>
-                        <p class="text-zinc-500">사진 업로드</p>
-                    </div>
-                    <img id="preview" class="hidden max-h-80 rounded-2xl mx-auto">
-                </div>
-                <input id="title" type="text" class="w-full bg-zinc-100 border border-zinc-200 rounded-2xl px-6 py-4 text-lg placeholder-zinc-400 focus:accent-border outline-none" placeholder="책 제목 (선택)">
-                <textarea id="memo" rows="5" class="w-full bg-zinc-100 border border-zinc-200 rounded-3xl px-6 py-5 resize-none focus:accent-border outline-none" placeholder="오늘 읽은 내용, 느낌..."></textarea>
-            </form>
+            <div class="p-6 space-y-6">
+                <input id="title" type="text" 
+                       class="w-full bg-zinc-100 border border-zinc-200 rounded-2xl px-6 py-4 text-lg placeholder-zinc-400 focus:border-[#ff75fa] outline-none"
+                       placeholder="책 제목 *">
+
+                <input id="publisher" type="text" 
+                       class="w-full bg-zinc-100 border border-zinc-200 rounded-2xl px-6 py-4 text-lg placeholder-zinc-400 focus:border-[#ff75fa] outline-none"
+                       placeholder="출판사 (선택)">
+
+                <textarea id="memo" rows="6" 
+                          class="w-full bg-zinc-100 border border-zinc-200 rounded-3xl px-6 py-5 resize-none focus:border-[#ff75fa] outline-none"
+                          placeholder="느낀점, 인상적인 문장, 독후감... *"></textarea>
+            </div>
             <div class="p-6 border-t border-zinc-200 flex gap-4">
                 <button onclick="hideModal()" class="flex-1 py-4 border border-zinc-300 rounded-3xl font-medium">취소</button>
-                <button id="saveBtn" onclick="savePost()" class="flex-1 py-4 accent-bg text-black font-bold rounded-3xl">게시하기</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- 상세 모달 -->
-    <div id="detail-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
-        <div class="bg-white w-full max-w-lg mx-4 rounded-3xl overflow-hidden">
-            <div class="relative">
-                <img id="detail-image" class="w-full max-h-[60vh] object-cover">
-                <button onclick="hideDetail()" class="absolute top-4 right-4 bg-black/70 text-white w-9 h-9 rounded-full flex items-center justify-center text-2xl">×</button>
-            </div>
-            <div class="p-6">
-                <div id="detail-title" class="font-semibold text-2xl mb-3"></div>
-                <div id="detail-memo" class="text-zinc-700 leading-relaxed whitespace-pre-wrap"></div>
-                <div id="detail-date" class="text-xs text-zinc-400 mt-6"></div>
-            </div>
-            <div class="p-6 border-t border-zinc-200 flex gap-4">
-                <button onclick="deleteCurrent()" class="flex-1 py-4 border border-red-300 text-red-600 rounded-3xl">삭제</button>
-                <button onclick="editCurrent()" class="flex-1 py-4 accent-bg text-black font-bold rounded-3xl">수정</button>
+                <button id="saveBtn" onclick="saveRecord()" class="flex-1 py-4 accent-bg text-black font-bold rounded-3xl">저장하기</button>
             </div>
         </div>
     </div>
 
     <script>
-        let posts = JSON.parse(localStorage.getItem('readingSnaps')) || [];
+        let records = JSON.parse(localStorage.getItem('readingRecords')) || [];
         let editingIndex = null;
-        let currentDetailIndex = null;
 
         function saveToStorage() {
-            try {
-                localStorage.setItem('readingSnaps', JSON.stringify(posts));
-                return true;
-            } catch (e) {
-                alert("저장 공간이 꽉 찼습니다!\n\n사진을 좀 지우거나 브라우저 캐시를 비워주세요.");
-                return false;
-            }
+            localStorage.setItem('readingRecords', JSON.stringify(records));
         }
 
         function renderFeed() {
             const feed = document.getElementById('feed');
             feed.innerHTML = '';
-            if (posts.length === 0) {
-                feed.innerHTML = `<div class="col-span-3 text-center py-20 text-zinc-400"><div class="text-7xl mb-4 accent">📖</div><p>아직 스냅이 없습니다<br>+ 버튼으로 시작하세요</p></div>`;
+            
+            if (records.length === 0) {
+                feed.innerHTML = `
+                    <div class="text-center py-20 text-zinc-400">
+                        <div class="text-7xl mb-4 accent">📖</div>
+                        <p>아직 기록이 없습니다<br>오른쪽 아래 + 버튼을 눌러 시작하세요</p>
+                    </div>`;
                 return;
             }
-            posts.slice().reverse().forEach((post, idx) => {
-                const realIndex = posts.length - 1 - idx;
-                const el = document.createElement('div');
-                el.className = "grid-item relative cursor-pointer rounded-3xl overflow-hidden shadow-sm";
-                el.innerHTML = `<img src="${post.image}" class="w-full h-full object-cover">`;
-                if (post.title) el.innerHTML += `<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 p-4 text-white text-sm font-medium line-clamp-2">${post.title}</div>`;
-                el.onclick = () => showDetail(realIndex);
-                feed.appendChild(el);
-            });
-        }
 
-        function previewImage(e) {
-            const reader = new FileReader();
-            reader.onload = ev => {
-                document.getElementById('preview').src = ev.target.result;
-                document.getElementById('preview').classList.remove('hidden');
-                document.getElementById('upload-area').classList.add('hidden');
-            };
-            reader.readAsDataURL(e.target.files[0]);
+            records.slice().reverse().forEach((rec, idx) => {
+                const realIndex = records.length - 1 - idx;
+                const card = document.createElement('div');
+                card.className = "bg-white rounded-3xl p-6 shadow-sm border border-zinc-100";
+                card.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-2xl font-bold">${rec.title}</div>
+                            ${rec.publisher ? `<div class="text-zinc-500 mt-1">${rec.publisher}</div>` : ''}
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="editRecord(${realIndex}); event.stopImmediatePropagation()" class="w-9 h-9 flex items-center justify-center text-xl hover:bg-zinc-100 rounded-2xl">✏️</button>
+                            <button onclick="deleteRecord(${realIndex}); event.stopImmediatePropagation()" class="w-9 h-9 flex items-center justify-center text-xl hover:bg-red-100 text-red-500 rounded-2xl">✕</button>
+                        </div>
+                    </div>
+                    <div class="mt-6 text-zinc-700 leading-relaxed whitespace-pre-wrap">${rec.memo}</div>
+                    <div class="text-xs text-zinc-400 mt-6">${new Date(rec.date).toLocaleDateString('ko-KR', {year:'numeric', month:'long', day:'numeric'})}</div>
+                `;
+                feed.appendChild(card);
+            });
         }
 
         function showModal(editIdx = null) {
             editingIndex = editIdx;
-            const modal = document.getElementById('modal');
-            modal.classList.remove('hidden');
-            document.getElementById('post-form').reset();
-            document.getElementById('fileInput').value = '';
-            document.getElementById('preview').src = '';
-            document.getElementById('preview').classList.add('hidden');
-            document.getElementById('upload-area').classList.remove('hidden');
+            document.getElementById('modal').classList.remove('hidden');
+            document.getElementById('title').value = '';
+            document.getElementById('publisher').value = '';
+            document.getElementById('memo').value = '';
 
             if (editIdx !== null) {
-                const p = posts[editIdx];
-                document.getElementById('modal-title').textContent = '스냅 수정';
+                const r = records[editIdx];
+                document.getElementById('modal-title').textContent = '기록 수정';
                 document.getElementById('saveBtn').textContent = '수정 완료';
-                document.getElementById('title').value = p.title || '';
-                document.getElementById('memo').value = p.memo;
-                document.getElementById('preview').src = p.image;
-                document.getElementById('preview').classList.remove('hidden');
-                document.getElementById('upload-area').classList.add('hidden');
+                document.getElementById('title').value = r.title;
+                document.getElementById('publisher').value = r.publisher || '';
+                document.getElementById('memo').value = r.memo;
             } else {
-                document.getElementById('modal-title').textContent = '새 독서 스냅';
-                document.getElementById('saveBtn').textContent = '게시하기';
+                document.getElementById('modal-title').textContent = '새 독서 기록';
+                document.getElementById('saveBtn').textContent = '저장하기';
             }
         }
 
@@ -149,56 +129,48 @@
             editingIndex = null;
         }
 
-        function savePost() {
+        function saveRecord() {
             const title = document.getElementById('title').value.trim();
+            const publisher = document.getElementById('publisher').value.trim();
             const memo = document.getElementById('memo').value.trim();
-            const preview = document.getElementById('preview');
 
-            if (!memo) { alert("메모를 적어주세요"); return; }
-            if (editingIndex === null && preview.classList.contains('hidden')) {
-                alert("사진을 먼저 업로드하세요");
-                return;
-            }
+            if (!title) { alert("책 제목을 입력하세요"); return; }
+            if (!memo) { alert("느낀점을 입력하세요"); return; }
 
             if (editingIndex !== null) {
-                const post = posts[editingIndex];
-                post.title = title;
-                post.memo = memo;
-                if (!preview.classList.contains('hidden') && preview.src) post.image = preview.src;
+                records[editingIndex].title = title;
+                records[editingIndex].publisher = publisher;
+                records[editingIndex].memo = memo;
             } else {
-                posts.push({ image: preview.src, title, memo, date: new Date().toISOString() });
+                records.push({
+                    title,
+                    publisher,
+                    memo,
+                    date: new Date().toISOString()
+                });
             }
 
-            if (saveToStorage()) {
-                hideModal();
-                renderFeed();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                setTimeout(() => alert("✅ 게시 완료!"), 100);
-            }
+            saveToStorage();
+            hideModal();
+            renderFeed();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        function clearAllData() {
-            if (confirm("모든 게시물을 정말 삭제할까요?\n\n되돌릴 수 없습니다!")) {
-                localStorage.removeItem('readingSnaps');
-                posts = [];
-                renderFeed();
-                alert("모든 데이터가 초기화되었습니다.");
-            }
+        function editRecord(idx) {
+            showModal(idx);
         }
 
-        function showDetail(idx) { /* 이전과 동일 */ currentDetailIndex = idx; const post = posts[idx]; document.getElementById('detail-image').src = post.image; document.getElementById('detail-title').textContent = post.title || '무제목'; document.getElementById('detail-memo').textContent = post.memo; document.getElementById('detail-date').textContent = new Date(post.date).toLocaleDateString('ko-KR', {year:'numeric', month:'long', day:'numeric'}); document.getElementById('detail-modal').classList.remove('hidden'); }
-        function hideDetail() { document.getElementById('detail-modal').classList.add('hidden'); }
-        function editCurrent() { hideDetail(); showModal(currentDetailIndex); }
-        function deleteCurrent() {
-            if (confirm("정말 삭제할까요?")) {
-                posts.splice(currentDetailIndex, 1);
+        function deleteRecord(idx) {
+            if (confirm("이 기록을 삭제할까요?")) {
+                records.splice(idx, 1);
                 saveToStorage();
-                hideDetail();
                 renderFeed();
             }
         }
 
-        window.onload = () => { renderFeed(); };
+        window.onload = () => {
+            renderFeed();
+        };
     </script>
 </body>
 </html>
