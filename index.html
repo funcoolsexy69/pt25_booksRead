@@ -19,7 +19,6 @@
 </head>
 <body class="bg-zinc-50 text-zinc-950 min-h-screen pb-20">
     <div class="max-w-xl mx-auto">
-        <!-- Header -->
         <div class="sticky top-0 bg-white border-b border-zinc-200 z-50 shadow-sm">
             <div class="flex items-center justify-between px-6 py-5">
                 <div class="flex items-center gap-3">
@@ -30,17 +29,14 @@
             </div>
         </div>
 
-        <!-- Feed -->
         <div id="feed" class="space-y-10 pt-6 px-4"></div>
     </div>
 
-    <!-- Floating + Button -->
     <button onclick="showModal()" 
             class="fixed bottom-8 right-8 w-16 h-16 accent-bg text-black rounded-full flex items-center justify-center text-4xl shadow-2xl hover:scale-110 transition-all active:scale-95 neon-hover">
         +
     </button>
 
-    <!-- Modal -->
     <div id="modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
         <div class="modal bg-white rounded-3xl w-full max-w-md mx-4 overflow-hidden shadow-2xl">
             <div class="p-6 border-b border-zinc-200 flex items-center justify-between">
@@ -49,7 +45,6 @@
             </div>
             
             <div class="p-6 space-y-6">
-                <!-- Image Upload -->
                 <div onclick="document.getElementById('fileInput').click()" 
                      class="border-2 border-dashed border-zinc-200 hover:accent-border rounded-3xl h-80 flex flex-col items-center justify-center cursor-pointer transition-all neon-hover">
                     <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="previewImage(event)">
@@ -60,12 +55,10 @@
                     <img id="preview" class="hidden max-h-80 rounded-2xl mx-auto">
                 </div>
 
-                <!-- Book Title -->
                 <input id="title" type="text" 
                        class="w-full bg-zinc-100 border border-zinc-200 rounded-2xl px-6 py-4 text-lg placeholder-zinc-400 focus:accent-border outline-none"
                        placeholder="책 제목 (선택)">
 
-                <!-- Memo -->
                 <textarea id="memo" rows="5"
                           class="w-full bg-zinc-100 border border-zinc-200 rounded-3xl px-6 py-5 resize-none focus:accent-border outline-none"
                           placeholder="오늘 읽은 내용, 느낌, 인상적인 문장..."></textarea>
@@ -127,17 +120,22 @@
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function(ev) {
-                document.getElementById('preview').src = ev.target.result;
-                document.getElementById('preview').classList.remove('hidden');
+                const preview = document.getElementById('preview');
+                preview.src = ev.target.result;
+                preview.classList.remove('hidden');
                 document.getElementById('upload-area').classList.add('hidden');
             };
             reader.readAsDataURL(file);
         }
 
         function showModal() {
-            document.getElementById('modal').classList.remove('hidden');
+            const modal = document.getElementById('modal');
+            const preview = document.getElementById('preview');
+            
+            modal.classList.remove('hidden');
             document.getElementById('fileInput').value = '';
-            document.getElementById('preview').classList.add('hidden');
+            preview.src = '';                    // ← 여기서 완전 초기화 (버그 해결 핵심)
+            preview.classList.add('hidden');
             document.getElementById('upload-area').classList.remove('hidden');
             document.getElementById('title').value = '';
             document.getElementById('memo').value = '';
@@ -148,11 +146,12 @@
         }
 
         function savePost() {
-            const previewImg = document.getElementById('preview');
+            const preview = document.getElementById('preview');
             const title = document.getElementById('title').value.trim();
             const memo = document.getElementById('memo').value.trim();
 
-            if (!previewImg.src || previewImg.classList.contains('hidden')) {
+            // 사진 제대로 업로드됐는지 철저 체크
+            if (preview.classList.contains('hidden') || !preview.src || !preview.src.startsWith('data:image')) {
                 alert("사진을 먼저 업로드하세요");
                 return;
             }
@@ -162,7 +161,7 @@
             }
 
             posts.push({
-                image: previewImg.src,
+                image: preview.src,
                 title: title,
                 memo: memo,
                 date: new Date().toISOString()
