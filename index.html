@@ -16,8 +16,8 @@
     </style>
 </head>
 <body class="bg-zinc-50 text-zinc-950 min-h-screen pb-20">
-    <div class="max-w-xl mx-auto">
-        <!-- IG 스타일 헤더 -->
+    <div class="max-w-2xl mx-auto">
+        <!-- 헤더 -->
         <div class="sticky top-0 bg-white border-b border-zinc-200 z-50 shadow-sm">
             <div class="flex items-center justify-between px-6 py-5">
                 <div class="flex items-center gap-3">
@@ -28,35 +28,36 @@
             </div>
         </div>
 
-        <!-- 인스타그램 그리드 피드 -->
-        <div id="feed" class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-6 px-4"></div>
+        <!-- 인스타그램 3열 그리드 -->
+        <div id="feed" class="grid grid-cols-2 md:grid-cols-3 gap-3 pt-6 px-4 pb-32"></div>
     </div>
 
     <!-- + 버튼 -->
     <button onclick="showModal()" 
-            class="fixed bottom-8 right-8 w-16 h-16 accent-bg text-black rounded-full flex items-center justify-center text-4xl shadow-2xl hover:scale-110 active:scale-95 transition-all neon-hover">
+            class="fixed bottom-8 right-8 w-16 h-16 accent-bg text-black rounded-full flex items-center justify-center text-4xl shadow-2xl hover:scale-110 active:scale-95 transition-all">
         +
     </button>
 
-    <!-- 새 스냅 / 수정 모달 -->
+    <!-- 새/수정 모달 -->
     <div id="modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
         <div class="modal bg-white rounded-3xl w-full max-w-md mx-4 overflow-hidden shadow-2xl">
             <div class="p-6 border-b border-zinc-200 flex items-center justify-between">
                 <h2 id="modal-title" class="text-xl font-semibold">새 독서 스냅</h2>
                 <button onclick="hideModal()" class="text-3xl text-zinc-400">×</button>
             </div>
-            <div class="p-6 space-y-6">
-                <div onclick="document.getElementById('fileInput').click()" class="border-2 border-dashed border-zinc-200 hover:accent-border rounded-3xl h-80 flex flex-col items-center justify-center cursor-pointer transition-all">
+            <form id="post-form" class="p-6 space-y-6">
+                <div onclick="document.getElementById('fileInput').click()" 
+                     class="border-2 border-dashed border-zinc-200 hover:accent-border rounded-3xl h-80 flex flex-col items-center justify-center cursor-pointer transition-all">
                     <input type="file" id="fileInput" accept="image/*" class="hidden" onchange="previewImage(event)">
                     <div id="upload-area" class="text-center">
                         <i class="fas fa-camera text-5xl accent mb-3"></i>
-                        <p class="text-zinc-500">사진 업로드</p>
+                        <p class="text-zinc-500">사진 업로드 (책 표지 / 읽는 페이지)</p>
                     </div>
                     <img id="preview" class="hidden max-h-80 rounded-2xl mx-auto">
                 </div>
                 <input id="title" type="text" class="w-full bg-zinc-100 border border-zinc-200 rounded-2xl px-6 py-4 text-lg placeholder-zinc-400 focus:accent-border outline-none" placeholder="책 제목 (선택)">
                 <textarea id="memo" rows="5" class="w-full bg-zinc-100 border border-zinc-200 rounded-3xl px-6 py-5 resize-none focus:accent-border outline-none" placeholder="오늘 읽은 내용, 느낌, 인상적인 문장..."></textarea>
-            </div>
+            </form>
             <div class="p-6 border-t border-zinc-200 flex gap-4">
                 <button onclick="hideModal()" class="flex-1 py-4 border border-zinc-300 rounded-3xl font-medium">취소</button>
                 <button id="saveBtn" onclick="savePost()" class="flex-1 py-4 accent-bg text-black font-bold rounded-3xl">게시하기</button>
@@ -64,7 +65,7 @@
         </div>
     </div>
 
-    <!-- 상세 보기 모달 (인스타 스타일) -->
+    <!-- 상세보기 모달 -->
     <div id="detail-modal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
         <div class="bg-white w-full max-w-lg mx-4 rounded-3xl overflow-hidden">
             <div class="relative">
@@ -73,11 +74,11 @@
             </div>
             <div class="p-6">
                 <div id="detail-title" class="font-semibold text-2xl mb-3"></div>
-                <div id="detail-memo" class="text-zinc-700 leading-relaxed whitespace-pre-wrap text-[15.5px]"></div>
+                <div id="detail-memo" class="text-zinc-700 leading-relaxed whitespace-pre-wrap"></div>
                 <div id="detail-date" class="text-xs text-zinc-400 mt-6"></div>
             </div>
             <div class="p-6 border-t border-zinc-200 flex gap-4">
-                <button onclick="deleteCurrent()" class="flex-1 py-4 border border-red-300 text-red-600 rounded-3xl font-medium">삭제</button>
+                <button onclick="deleteCurrent()" class="flex-1 py-4 border border-red-300 text-red-600 rounded-3xl">삭제</button>
                 <button onclick="editCurrent()" class="flex-1 py-4 accent-bg text-black font-bold rounded-3xl">수정</button>
             </div>
         </div>
@@ -101,10 +102,8 @@
                 const realIndex = posts.length - 1 - idx;
                 const el = document.createElement('div');
                 el.className = "grid-item relative cursor-pointer rounded-3xl overflow-hidden shadow-sm";
-                el.innerHTML = `
-                    <img src="${post.image}" class="w-full h-full object-cover">
-                    ${post.title ? `<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 text-white text-sm font-medium line-clamp-2">${post.title}</div>` : ''}
-                `;
+                el.innerHTML = `<img src="${post.image}" class="w-full h-full object-cover">`;
+                if (post.title) el.innerHTML += `<div class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 p-4 text-white text-sm font-medium line-clamp-2">${post.title}</div>`;
                 el.onclick = () => showDetail(realIndex);
                 feed.appendChild(el);
             });
@@ -113,8 +112,9 @@
         function previewImage(e) {
             const reader = new FileReader();
             reader.onload = ev => {
-                document.getElementById('preview').src = ev.target.result;
-                document.getElementById('preview').classList.remove('hidden');
+                const preview = document.getElementById('preview');
+                preview.src = ev.target.result;
+                preview.classList.remove('hidden');
                 document.getElementById('upload-area').classList.add('hidden');
             };
             reader.readAsDataURL(e.target.files[0]);
@@ -122,12 +122,13 @@
 
         function showModal(editIdx = null) {
             editingIndex = editIdx;
-            document.getElementById('modal').classList.remove('hidden');
+            const modal = document.getElementById('modal');
+            modal.classList.remove('hidden');
+            document.getElementById('post-form').reset();
             document.getElementById('fileInput').value = '';
+            document.getElementById('preview').src = '';
             document.getElementById('preview').classList.add('hidden');
             document.getElementById('upload-area').classList.remove('hidden');
-            document.getElementById('title').value = '';
-            document.getElementById('memo').value = '';
 
             if (editIdx !== null) {
                 const p = posts[editIdx];
@@ -144,7 +145,10 @@
             }
         }
 
-        function hideModal() { document.getElementById('modal').classList.add('hidden'); editingIndex = null; }
+        function hideModal() {
+            document.getElementById('modal').classList.add('hidden');
+            editingIndex = null;
+        }
 
         function savePost() {
             const title = document.getElementById('title').value.trim();
@@ -159,13 +163,16 @@
                 post.memo = memo;
                 if (!preview.classList.contains('hidden') && preview.src) post.image = preview.src;
             } else {
-                if (preview.classList.contains('hidden')) { alert("사진을 업로드하세요"); return; }
+                if (preview.classList.contains('hidden')) { alert("사진을 먼저 업로드하세요"); return; }
                 posts.push({ image: preview.src, title, memo, date: new Date().toISOString() });
             }
 
             saveToStorage();
             hideModal();
             renderFeed();
+            
+            // 🔥 핵심 해결: 새 게시물 올리면 바로 상단으로 스크롤 → 안 보이는 곳에 숨는 문제 완전 해결
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
         function showDetail(idx) {
@@ -174,17 +181,12 @@
             document.getElementById('detail-image').src = post.image;
             document.getElementById('detail-title').textContent = post.title || '무제목';
             document.getElementById('detail-memo').textContent = post.memo;
-            document.getElementById('detail-date').textContent = new Date(post.date).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+            document.getElementById('detail-date').textContent = new Date(post.date).toLocaleDateString('ko-KR', {year:'numeric', month:'long', day:'numeric'});
             document.getElementById('detail-modal').classList.remove('hidden');
         }
 
         function hideDetail() { document.getElementById('detail-modal').classList.add('hidden'); }
-
-        function editCurrent() {
-            hideDetail();
-            showModal(currentDetailIndex);
-        }
-
+        function editCurrent() { hideDetail(); showModal(currentDetailIndex); }
         function deleteCurrent() {
             if (confirm("정말 삭제할까요?")) {
                 posts.splice(currentDetailIndex, 1);
