@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="mul">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>독서 기록장 📸</title>
+    <title>독서 스냅 📸</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
@@ -40,7 +40,7 @@
     <div id="modal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
         <div class="modal bg-white rounded-3xl w-full max-w-md mx-4 overflow-hidden shadow-2xl">
             <div class="p-6 border-b border-zinc-200 flex items-center justify-between">
-                <h2 class="text-xl font-semibold">새 독서 스냅</h2>
+                <h2 id="modal-title" class="text-xl font-semibold">새 독서 스냅</h2>
                 <button onclick="hideModal()" class="text-3xl leading-none text-zinc-400">×</button>
             </div>
             
@@ -67,7 +67,7 @@
             <div class="p-6 border-t border-zinc-200 flex gap-4">
                 <button onclick="hideModal()" 
                         class="flex-1 py-4 border border-zinc-300 rounded-3xl font-medium">취소</button>
-                <button onclick="savePost()" 
+                <button id="saveBtn" onclick="savePost()" 
                         class="flex-1 py-4 accent-bg text-black font-bold rounded-3xl neon-hover">게시하기</button>
             </div>
         </div>
@@ -75,6 +75,7 @@
 
     <script>
         let posts = JSON.parse(localStorage.getItem('readingSnaps')) || [];
+        let editingIndex = null;
 
         function saveToStorage() {
             localStorage.setItem('readingSnaps', JSON.stringify(posts));
@@ -93,19 +94,25 @@
                 return;
             }
 
-            posts.slice().reverse().forEach((post, index) => {
-                const realIndex = posts.length - 1 - index;
+            posts.slice().reverse().forEach((post, idx) => {
+                const realIndex = posts.length - 1 - idx;
                 const card = document.createElement('div');
-                card.className = "bg-white rounded-3xl overflow-hidden border border-zinc-100 shadow-sm neon-hover";
+                card.className = "bg-white rounded-3xl overflow-hidden border border-zinc-100 shadow-sm neon-hover cursor-pointer";
                 card.innerHTML = `
                     <div class="relative">
-                        <img src="${post.image}" class="post-img w-full">
-                        <button onclick="deletePost(${realIndex}); event.stopImmediatePropagation()" 
-                                class="absolute top-4 right-4 bg-black/60 hover:bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-xl">
-                            ✕
-                        </button>
+                        <img src="${post.image}" class="post-img w-full" onclick="editPost(${realIndex}); event.stopImmediatePropagation()">
+                        <div class="absolute top-4 right-4 flex gap-2">
+                            <button onclick="editPost(${realIndex}); event.stopImmediatePropagation()" 
+                                    class="bg-white/90 hover:bg-white text-black w-8 h-8 rounded-full flex items-center justify-center text-lg shadow">
+                                ✏️
+                            </button>
+                            <button onclick="deletePost(${realIndex}); event.stopImmediatePropagation()" 
+                                    class="bg-black/70 hover:bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-xl">
+                                ✕
+                            </button>
+                        </div>
                     </div>
-                    <div class="p-6">
+                    <div class="p-6" onclick="editPost(${realIndex})">
                         ${post.title ? `<div class="font-semibold text-xl mb-2 text-zinc-950">${post.title}</div>` : ''}
                         <div class="text-zinc-700 leading-relaxed whitespace-pre-wrap">${post.memo}</div>
                         <div class="text-xs text-zinc-400 mt-4">${new Date(post.date).toLocaleDateString('ko-KR', {month:'long', day:'numeric'})}</div>
@@ -128,21 +135,42 @@
             reader.readAsDataURL(file);
         }
 
-        function showModal() {
+        function showModal(editIdx = null) {
+            editingIndex = editIdx;
             const modal = document.getElementById('modal');
             const preview = document.getElementById('preview');
-            
+            const uploadArea = document.getElementById('upload-area');
+            const titleInput = document.getElementById('title');
+            const memoInput = document.getElementById('memo');
+            const modalTitle = document.getElementById('modal-title');
+            const saveBtn = document.getElementById('saveBtn');
+
             modal.classList.remove('hidden');
             document.getElementById('fileInput').value = '';
-            preview.src = '';                    // ← 여기서 완전 초기화 (버그 해결 핵심)
+            preview.src = '';
             preview.classList.add('hidden');
-            document.getElementById('upload-area').classList.remove('hidden');
-            document.getElementById('title').value = '';
-            document.getElementById('memo').value = '';
+            uploadArea.classList.remove('hidden');
+            titleInput.value = '';
+            memoInput.value = '';
+
+            if (editIdx !== null) {
+                const post = posts[editIdx];
+                modalTitle.textContent = '스냅 수정';
+                saveBtn.textContent = '수정 완료';
+                titleInput.value = post.title || '';
+                memoInput.value = post.memo;
+                preview.src = post.image;
+                preview.classList.remove('hidden');
+                uploadArea.classList.add('hidden');
+            } else {
+                modalTitle.textContent = '새 독서 스냅';
+                saveBtn.textContent = '게시하기';
+            }
         }
 
         function hideModal() {
             document.getElementById('modal').classList.add('hidden');
+            editingIndex = null;
         }
 
         function savePost() {
@@ -150,26 +178,41 @@
             const title = document.getElementById('title').value.trim();
             const memo = document.getElementById('memo').value.trim();
 
-            // 사진 제대로 업로드됐는지 철저 체크
-            if (preview.classList.contains('hidden') || !preview.src || !preview.src.startsWith('data:image')) {
-                alert("사진을 먼저 업로드하세요");
-                return;
-            }
             if (!memo) {
                 alert("독서 메모를 적어주세요");
                 return;
             }
 
-            posts.push({
-                image: preview.src,
-                title: title,
-                memo: memo,
-                date: new Date().toISOString()
-            });
+            if (editingIndex !== null) {
+                // 수정 모드
+                const post = posts[editingIndex];
+                post.title = title;
+                post.memo = memo;
+                // 새 사진 업로드했으면 교체
+                if (!preview.classList.contains('hidden') && preview.src.startsWith('data:image')) {
+                    post.image = preview.src;
+                }
+            } else {
+                // 새 등록
+                if (preview.classList.contains('hidden') || !preview.src.startsWith('data:image')) {
+                    alert("사진을 먼저 업로드하세요");
+                    return;
+                }
+                posts.push({
+                    image: preview.src,
+                    title: title,
+                    memo: memo,
+                    date: new Date().toISOString()
+                });
+            }
 
             saveToStorage();
             hideModal();
             renderFeed();
+        }
+
+        function editPost(index) {
+            showModal(index);
         }
 
         function deletePost(index) {
