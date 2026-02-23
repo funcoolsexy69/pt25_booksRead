@@ -84,16 +84,10 @@
         function renderFeed() {
             const feed = document.getElementById('feed');
             feed.innerHTML = '';
-            
             if (posts.length === 0) {
-                feed.innerHTML = `
-                    <div class="text-center py-20 text-zinc-400">
-                        <div class="text-6xl mb-4 accent">📖</div>
-                        <p>아직 스냅이 없습니다<br>오른쪽 아래 + 버튼을 눌러 시작하세요</p>
-                    </div>`;
+                feed.innerHTML = `<div class="text-center py-20 text-zinc-400"><div class="text-6xl mb-4 accent">📖</div><p>아직 스냅이 없습니다<br>오른쪽 아래 + 버튼을 눌러 시작하세요</p></div>`;
                 return;
             }
-
             posts.slice().reverse().forEach((post, idx) => {
                 const realIndex = posts.length - 1 - idx;
                 const card = document.createElement('div');
@@ -102,14 +96,8 @@
                     <div class="relative">
                         <img src="${post.image}" class="post-img w-full" onclick="editPost(${realIndex}); event.stopImmediatePropagation()">
                         <div class="absolute top-4 right-4 flex gap-2">
-                            <button onclick="editPost(${realIndex}); event.stopImmediatePropagation()" 
-                                    class="bg-white/90 hover:bg-white text-black w-8 h-8 rounded-full flex items-center justify-center text-lg shadow">
-                                ✏️
-                            </button>
-                            <button onclick="deletePost(${realIndex}); event.stopImmediatePropagation()" 
-                                    class="bg-black/70 hover:bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-xl">
-                                ✕
-                            </button>
+                            <button onclick="editPost(${realIndex}); event.stopImmediatePropagation()" class="bg-white/90 hover:bg-white text-black w-8 h-8 rounded-full flex items-center justify-center text-lg shadow">✏️</button>
+                            <button onclick="deletePost(${realIndex}); event.stopImmediatePropagation()" class="bg-black/70 hover:bg-red-600 text-white w-8 h-8 rounded-full flex items-center justify-center text-xl">✕</button>
                         </div>
                     </div>
                     <div class="p-6" onclick="editPost(${realIndex})">
@@ -184,17 +172,16 @@
             }
 
             if (editingIndex !== null) {
-                // 수정 모드
+                // 수정
                 const post = posts[editingIndex];
                 post.title = title;
                 post.memo = memo;
-                // 새 사진 업로드했으면 교체
-                if (!preview.classList.contains('hidden') && preview.src.startsWith('data:image')) {
+                if (!preview.classList.contains('hidden') && preview.src) {
                     post.image = preview.src;
                 }
             } else {
-                // 새 등록
-                if (preview.classList.contains('hidden') || !preview.src.startsWith('data:image')) {
+                // 새로 추가 ← 여기 체크 완화
+                if (preview.classList.contains('hidden') || !preview.src) {
                     alert("사진을 먼저 업로드하세요");
                     return;
                 }
